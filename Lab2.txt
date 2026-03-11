@@ -1,0 +1,170 @@
+Step 1 
+In VScode terminal,
+Navigate to the folder with name "AWSLabs"
+Run command git clone https://github.com/awscloudessentials/intro-to-aws-lab.git (this will clone this repo into your local machine)
+Run command cd intro-to-aws-lab
+Run command ls -la to view content of local repo
+Copy Lab2.txt into the folder "AWSLabs"
+Delete the cloned repo
+
+Step2  (Create a Virtual Server)
+Login into your AWS Console 
+Create an EC2 instance with 
+Select your default VPC
+With the following  Inbound rule
+Type      Source
+SSH         Anywhere
+HTTP       Anywhere IPv4
+Select “Amazon Linux 2023 AMI “ under Application and OS Images
+Select “t3micro “ for instance type
+Key pair with name "Linux" and key file format ".pem"
+Download pem file into your local machine
+Create a Security Group with name “PublicSG” and give it any description you prefer
+
+Step3 (ssh into Server)
+On your local machine log into the server using the keypair downloaded into your local machine
+Navigate to the location of the pem key and run the following commands
+chmod 400 <name of pem key>
+ssh -i <name of pem key> ec2user@<public-ip-address-of server>
+This gets you into the server
+
+Step4 (Set up page and nginx service)
+Run the following commands 
+yum update -y
+yum install -y nginx
+systemctl start nginx
+systemctl enable nginx
+echo "Hello World from $(hostname -f)" | sudo tee /usr/share/nginx/html/index.html
+systemctl restart nginx
+On a fresh web page paste http://<public ip address of your Virtual machine>
+It should show Hello World from <public ip address of your Virtual machine>
+Share this http://<public ip address of your Virtual machine> on the WhatsApp group for confirmation
+Once confirmed, terminate the instance on you AWS Console
+
+Step 5 (Documentation)
+Modify and update every step you took to achieve the lab, that was not captured in the lab instruction in your local repo Lab2.txt file and save.
+On the terminal run command git add Lab2.txt
+Git commit -m “created a webserver using nginx service"
+Push to your github repo
+
+
+LAB02 DOCUMENTATION
+Date: 11/03/2026
+===========================================
+
+STEP 1 - GET LAB FILE
+===========================================
+1. Opened VSCode terminal (WSL)
+
+2. Navigated to AWSLabs folder:
+   cd /mnt/c/users/hp/onedrive/desktop/AWSLabs/
+
+3. Cloned the instructor's repository:
+   git clone https://github.com/awscloudessentials/intro-to-aws-lab.git
+
+4. Navigated into the cloned repo:
+   cd intro-to-aws-lab
+
+5. Viewed the contents of the cloned repo:
+   ls -la
+
+6. Copied Lab2.txt into AWSLabs folder:
+   cp Lab2.txt /mnt/c/users/hp/onedrive/desktop/AWSLabs/
+
+7. Navigated back to AWSLabs:
+   cd /mnt/c/users/hp/onedrive/desktop/AWSLabs/
+
+8. Deleted the cloned repo:
+   rm -rf intro-to-aws-lab
+
+
+STEP 2 - CREATE EC2 INSTANCE (VIRTUAL SERVER)
+===========================================
+1. Logged into AWS Console at https://aws.amazon.com
+
+2. Searched for EC2 in the search bar and clicked on it
+
+3. Clicked "Launch Instance"
+
+4. Filled in the following details:
+   - Name: MyFirstServer
+   - AMI: Amazon Linux 2023
+   - Instance Type: t3.micro
+   - Key Pair: Created new key pair named "Linux", RSA type, .pem format
+   - Downloaded the Linux.pem file to local machine
+
+5. Under Network Settings:
+   - Selected default VPC
+   - Created Security Group named "PublicSG"
+   - Added Inbound Rules:
+     Type: SSH,  Source: Anywhere
+     Type: HTTP, Source: Anywhere (IPv4)
+
+6. Clicked "Launch Instance"
+
+
+STEP 3 - SSH INTO SERVER
+===========================================
+1. The downloaded pem file was named "Linux (1).pem"
+   Renamed it to Linux.pem using the command:
+   mv '/mnt/c/users/hp/downloads/Linux (1).pem' /mnt/c/users/hp/downloads/Linux.pem
+
+2. Navigated to the downloads folder:
+   cd /mnt/c/users/hp/downloads/
+
+3. Set correct permissions on the pem file:
+   chmod 400 /mnt/c/users/hp/downloads/Linux.pem
+
+4. Copied the Public IPv4 address of the EC2 instance from AWS Console
+
+5. SSHed into the server:
+   ssh -i /mnt/c/users/hp/downloads/Linux.pem ec2-user@<public-ip-address>
+
+6. Typed "yes" when prompted to confirm the connection
+
+
+STEP 4 - SET UP NGINX WEB SERVER
+===========================================
+1. Updated the server software:
+   sudo yum update -y
+
+2. Installed Nginx:
+   sudo yum install -y nginx
+
+3. Started Nginx:
+   sudo systemctl start nginx
+
+4. Enabled Nginx to start on reboot:
+   sudo systemctl enable nginx
+
+5. Created the webpage content:
+   echo "Hello World from $(hostname -f)" | sudo tee /usr/share/nginx/html/index.html
+
+6. Restarted Nginx to apply changes:
+   sudo systemctl restart nginx
+
+7. Opened browser and visited:
+   http://<public-ip-address>
+   Result: Page displayed "Hello World from <server-hostname>"
+
+8. Shared the link on WhatsApp group for instructor confirmation
+
+9. After confirmation, went back to AWS Console and terminated the instance
+
+
+STEP 5 - PUSH DOCUMENTATION TO GITHUB
+===========================================
+1. Navigated to AWSLabs folder:
+   cd /mnt/c/users/hp/onedrive/desktop/AWSLabs/
+
+2. Appended documentation to Lab2.txt without deleting existing content:
+   cat >> /mnt/c/users/hp/onedrive/desktop/AWSLabs/Lab2.txt << 'EOF'
+
+3. Staged the file:
+   git add Lab2.txt
+
+4. Committed the file:
+   git commit -m "created a webserver using nginx service"
+
+5. Pushed to GitHub:
+   git push https://github.com/amoskelechi/AWSLabs.git master
