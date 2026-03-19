@@ -1,0 +1,277 @@
+Step 1 
+In VScode terminal,
+Navigate to the folder with name "AWSLabs"
+Run command git clone https://github.com/awscloudessentials/intro-to-aws-lab.git (this will clone this repo into your local machine)
+Run command cd intro-to-aws-lab
+Run command ls -la to view content of local repo
+Copy Lab3a.txt into the folder "AWSLabs"
+Delete the cloned repo
+
+Step2  (Create a Virtual Server)
+Login into your AWS Console 
+Create a Launch template 
+Select your default VPC
+With the following  Inbound rule
+Type      Source
+SSH         Anywhere
+HTTP       Anywhere IPv4
+Select “Amazon Linux 2023 AMI “ under Application and OS Images
+Select “t3micro “ for instance type
+Key pair with name "Linux" and key file format ".pem"
+Download pem file into your local machine
+Create a Security Group with name “PublicSG” and give it any description you prefer
+Scroll down to the section with userdata copy and paste this:
+
+#!/bin/bash
+yum update -y
+yum install -y httpd
+systemctl start httpd
+systemctl enable httpd
+
+BOOT_TIME=$(date '+%Y-%m-%d %H:%M:%S UTC')
+INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+AZ=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone)
+
+cat > /var/www/html/index.html << EOF
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ASG Demo</title>
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #0f1923;
+      font-family: "Segoe UI", Arial, sans-serif;
+      color: #e8edf2;
+    }
+    .card {
+      background: #1a2535;
+      border: 1px solid #2a3a50;
+      border-radius: 16px;
+      padding: 48px 56px;
+      text-align: center;
+      max-width: 460px;
+      width: 90%;
+    }
+    .label {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #5b8db8;
+      margin-bottom: 12px;
+    }
+    .timestamp {
+      font-size: 28px;
+      font-weight: 700;
+      color: #ff9900;
+      margin-bottom: 8px;
+      line-height: 1.3;
+    }
+    .sub {
+      font-size: 14px;
+      color: #7a9ab8;
+      margin-bottom: 36px;
+    }
+    .divider {
+      border: none;
+      border-top: 1px solid #2a3a50;
+      margin-bottom: 28px;
+    }
+    .meta { text-align: left; }
+    .row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .key {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #4a6a88;
+    }
+    .val {
+      font-size: 12px;
+      color: #c0d0e0;
+    }
+    .badge {
+      display: inline-block;
+      margin-top: 28px;
+      background: #1f3a1f;
+      border: 1px solid #2d5a2d;
+      color: #5db85d;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 16px;
+      border-radius: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <p class="label">New instance spun up by ASG</p>
+    <div class="timestamp">${BOOT_TIME}</div>
+    <p class="sub">Terminate this instance — the ASG will replace it with a newer timestamp</p>
+    <hr class="divider">
+    <div class="meta">
+      <div class="row">
+        <span class="key">Instance ID</span>
+        <span class="val">${INSTANCE_ID}</span>
+      </div>
+      <div class="row">
+        <span class="key">Availability Zone</span>
+        <span class="val">${AZ}</span>
+      </div>
+    </div>
+    <span class="badge">Auto Scaling Group is healthy</span>
+  </div>
+</body>
+</html>
+EOF
+
+NB: Enable "Assign public IP"
+Then create the launch template.
+
+Step3 
+Create an Auto Scaling Group(ASG) using the launch template you created in Step2
+Select no scaling policy and use Minimum -1
+Desired - 2
+Maximum - 3
+Once done, move to step 4
+
+Step 4
+Go to your EC2 dashboard, wait for the 2 instances to come up and then terminate them
+Send a screenshot showing the instances terminating and 2 new instances spun up by the ASG and share on WhatsApp
+Once confirmed, delete your ASG
+
+Step 4 (Documentation)
+Modify and update every step you took to achieve the lab, that was not captured in the lab instruction in your local repo Lab3a.txt file and save.
+On the terminal run command git add Lab3a.txt
+Git commit -m “use a meaningful message here"
+Push to your github repo
+
+
+
+
+LAB03a DOCUMENTATION
+===========================================
+
+STEP 1 - GET LAB FILE
+===========================================
+1. Opened VSCode terminal (WSL)
+
+2. Navigated to AWSLabs folder:
+   cd /mnt/c/users/hp/onedrive/desktop/AWSLabs/
+
+3. Cloned the instructor's repository:
+   git clone https://github.com/awscloudessentials/intro-to-aws-lab.git
+
+4. Navigated into the cloned repo:
+   cd intro-to-aws-lab
+
+5. Viewed the contents:
+   ls -la
+
+6. Copied Lab3a.txt into AWSLabs folder:
+   cp Lab3a.txt /mnt/c/users/hp/onedrive/desktop/AWSLabs/
+
+7. Navigated back to AWSLabs:
+   cd /mnt/c/users/hp/onedrive/desktop/AWSLabs/
+
+8. Deleted the cloned repo:
+   rm -rf intro-to-aws-lab
+
+
+STEP 2 - CREATE LAUNCH TEMPLATE
+===========================================
+1. Logged into AWS Console and navigated to EC2
+
+2. Clicked "Launch Templates" on the left sidebar
+
+3. Clicked "Create launch template" and filled in:
+   - Name: Lab3aTemplate
+   - AMI: Amazon Linux 2023
+   - Instance Type: t3.micro
+   - Key Pair: Selected existing "Linux" key pair
+   - Security Group: Selected existing "PublicSG"
+
+4. Under Network interfaces:
+   - Enabled "Auto-assign public IP"
+
+5. Under Advanced Details:
+   - Pasted the User Data script which:
+     - Updated server packages
+     - Installed and started Apache (httpd)
+     - Fetched instance metadata (Instance ID, Availability Zone)
+     - Created a styled HTML webpage displaying instance info
+
+6. Clicked "Create launch template"
+
+
+STEP 3 - CREATE AUTO SCALING GROUP
+===========================================
+1. Clicked "Auto Scaling Groups" on the left sidebar
+
+2. Clicked "Create Auto Scaling group" and filled in:
+   - Name: Lab3aASG
+   - Launch Template: Lab3aTemplate
+
+3. Selected default VPC and 2 availability zones/subnets
+
+4. Skipped load balancer configuration
+
+5. Set Group Size:
+   - Minimum: 1
+   - Desired: 2
+   - Maximum: 3
+   - Scaling Policy: None
+
+6. Clicked "Create Auto Scaling group"
+
+7. Waited for 2 instances to launch automatically
+
+
+STEP 4 - TERMINATE INSTANCES AND OBSERVE ASG
+===========================================
+1. Navigated to EC2 Instances dashboard
+
+2. Waited for 2 instances to show "Running" status
+
+3. Visited public IP of one instance in browser:
+   http://<public-ip-address>
+   Result: Styled ASG Demo page displayed with Instance ID,
+   Availability Zone and Boot Time
+
+4. Terminated both instances
+
+5. Observed ASG automatically spinning up 2 new replacement instances
+
+6. Took screenshot showing old instances terminating and new ones launching
+
+7. Shared screenshot on WhatsApp group for instructor confirmation
+
+8. After confirmation, deleted the ASG
+
+
+STEP 5 - PUSH DOCUMENTATION TO GITHUB
+===========================================
+1. Navigated to AWSLabs folder:
+   cd /mnt/c/users/hp/onedrive/desktop/AWSLabs/
+
+2. Appended documentation to Lab3a.txt:
+   cat >> Lab3a.txt << 'EOF'
+
+3. Staged the file:
+   git add Lab3a.txt
+
+4. Committed the file:
+   git commit -m "deployed Auto Scaling Group with Launch Template on AWS"
+
+5. Pushed to GitHub:
+   git push https://github.com/amoskelechi/AWSLabs.git main
