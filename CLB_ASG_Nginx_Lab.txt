@@ -1,0 +1,172 @@
+LAB: CLB + ASG + Nginx Architecture
+=====================================
+
+ARCHITECTURE DIAGRAM
+=====================================
+
+                        Internet
+                           |
+                          IGW
+                           |
+                          CLB
+                        /     \
+              PublicSubnetA   PublicSubnetB
+              10.0.1.0/24     10.0.2.0/24
+              (us-east-1a)    (us-east-1b)
+                   |               |
+            Public EC2 #1    Public EC2 #2
+            (Nginx Proxy)    (Nginx Proxy)
+            [ASG managed]    [ASG managed]
+                   |               |
+              NAT Gateway          |
+                        \         /
+                         \       /
+                       PrivateSubnet
+                       10.0.3.0/24
+                       (us-east-1a)
+                            |
+                       Private EC2
+                    (Nginx - serves HTML page)
+
+Traffic Flow:
+Browser → Internet → IGW → CLB → Public EC2 (Nginx Proxy) → Private EC2 (Nginx) → HTML Page
+
+
+RESOURCES CREATED
+=====================================
+VPC:             MyLabVPC (10.0.0.0/16)
+Public Subnet A: 10.0.1.0/24 (us-east-1a)
+Public Subnet B: 10.0.2.0/24 (us-east-1b)
+Private Subnet:  10.0.3.0/24 (us-east-1a)
+IGW:             MyLabIGW
+NAT Gateway:     MyLabNATGateway
+Load Balancer:   MyLabCLB (Classic Load Balancer)
+ASG:             PublicNginxASG (Min:1, Desired:2, Max:3)
+Private EC2:     PrivateEC2 (10.0.3.30)
+Security Groups: LBSG, PublicSG, PrivateSG
+
+
+DOCUMENTATION
+=====================================
+
+STEP 1 - CREATE VPC
+-------------------------------------
+1. Navigated to VPC in AWS Console
+2. Created VPC with:
+   Name: MyLabVPC
+   CIDR: 10.0.0.0/16
+
+
+STEP 2 - CREATE SUBNETS
+-------------------------------------
+1. Created PublicSubnetA:
+   CIDR: 10.0.1.0/24, AZ: us-east-1a
+2. Created PublicSubnetB:
+   CIDR: 10.0.2.0/24, AZ: us-east-1b
+3. Created PrivateSubnet:
+   CIDR: 10.0.3.0/24, AZ: us-east-1a
+4. Enabled auto-assign public IP on both public subnets
+
+
+STEP 3 - CREATE INTERNET GATEWAY
+-------------------------------------
+1. Created MyLabIGW
+2. Attached to MyLabVPC
+
+
+STEP 4 - CREATE NAT GATEWAY
+-------------------------------------
+1. Allocated an Elastic IP address
+2. Created MyLabNATGateway in PublicSubnetA
+3. Waited for status to show Available
+
+
+STEP 5 - CREATE ROUTE TABLES
+-------------------------------------
+1. Created PublicRouteTable:
+   Route: 0.0.0.0/0 → MyLabIGW
+   Associated: PublicSubnetA and PublicSubnetB
+
+2. Created PrivateRouteTable:
+   Route: 0.0.0.0/0 → MyLabNATGateway
+   Associated: PrivateSubnet
+
+
+STEP 6 - CREATE SECURITY GROUPS
+-------------------------------------
+1. LBSG:
+   Inbound: HTTP port 80 from 0.0.0.0/0
+
+2. PublicSG:
+   Inbound: SSH port 22 from 0.0.0.0/0
+   Inbound: HTTP port 80 from LBSG only
+
+3. PrivateSG:
+   Inbound: SSH port 22 from PublicSG only
+   Inbound: HTTP port 80 from PublicSG only
+
+
+STEP 7 - LAUNCH PRIVATE EC2
+-------------------------------------
+1. Launched PrivateEC2:
+   AMI: Amazon Linux 2023
+   Instance type: t2.micro
+   Subnet: PrivateSubnet
+   Public IP: Disabled
+   Security group: PrivateSG
+   User data: Installed Nginx and created custom HTML page
+2. Noted Private IP: 10.0.3.30
+
+
+STEP 8 - CREATE LAUNCH TEMPLATE
+-------------------------------------
+1. Created PublicNginxTemplate:
+   AMI: Amazon Linux 2023
+   Instance type: t2.micro
+   Security group: PublicSG
+   Public IP: Enabled
+   User data: Installed Nginx with reverse proxy config
+   pointing to Private EC2 at 10.0.3.30
+
+
+STEP 9 - CREATE AUTO SCALING GROUP
+-------------------------------------
+1. Created PublicNginxASG:
+   Launch template: PublicNginxTemplate
+   Subnets: PublicSubnetA and PublicSubnetB
+   Min: 1, Desired: 2, Max: 3
+   Scaling policy: None
+   Tag: Name = PublicNginxEC2
+
+
+STEP 10 - CREATE CLASSIC LOAD BALANCER
+-------------------------------------
+1. Created MyLabCLB:
+   Scheme: Internet-facing
+   Subnets: PublicSubnetA and PublicSubnetB
+   Security group: LBSG
+   Health check: HTTP port 80
+   Instances: Both PublicNginxEC2 instances
+2. Verified: 2 of 2 instances InService
+
+
+STEP 11 - TEST
+-------------------------------------
+1. Copied CLB DNS name from AWS Console
+2. Opened in browser using http://
+3. Result: Page displayed "Hello from the Private EC2!"
+   confirming full traffic path was working
+
+
+CLEANUP ORDER
+=====================================
+1. Delete ASG (automatically terminates public EC2s)
+2. Terminate PrivateEC2
+3. Delete CLB (MyLabCLB)
+4. Delete NAT Gateway (MyLabNATGateway)
+5. Release Elastic IP
+6. Detach and delete IGW (MyLabIGW)
+7. Delete all subnets
+8. Delete route tables
+9. Delete security groups (LBSG, PublicSG, PrivateSG)
+10. Delete VPC (MyLabVPC)
